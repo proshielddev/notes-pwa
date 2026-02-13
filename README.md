@@ -190,3 +190,4 @@ Want to add more features? Here are ideas:
 - **Rich Text**: Markdown preview
 
 Fork it, hack it, make it yours! 🎉
+# notes-pwa
