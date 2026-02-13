@@ -15,6 +15,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve service worker from root
+app.get('/sw.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'sw.js'));
+});
+
 // Notes directory
 const NOTES_DIR = path.join(__dirname, 'notes');
 
