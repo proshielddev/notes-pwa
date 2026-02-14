@@ -10,6 +10,7 @@ const sendBtn = document.getElementById('sendBtn');
 const messagesContainer = document.getElementById('messagesContainer');
 const welcomeView = document.getElementById('welcomeView');
 const chatView = document.getElementById('chatView');
+const backBtn = document.getElementById('backBtn');
 
 // ===== VIEW SWITCHING =====
 
@@ -17,12 +18,37 @@ function showWelcome() {
   welcomeView.style.display = 'block';
   chatView.classList.remove('active');
   currentView = 'welcome';
+  updateBackButtonVisibility();
 }
 
 function showChat() {
+  if (currentView === 'welcome') {
+    window.history.pushState({ view: 'chat' }, '', window.location.pathname);
+  }
   welcomeView.style.display = 'none';
   chatView.classList.add('active');
   currentView = 'chat';
+  updateBackButtonVisibility();
+}
+
+// ===== BACK BUTTON =====
+
+function updateBackButtonVisibility() {
+  const show = currentView !== 'welcome' || window.history.length > 1;
+  if (backBtn) {
+    backBtn.classList.toggle('hidden', !show);
+  }
+}
+
+function initBackButton() {
+  if (!backBtn) return;
+  backBtn.addEventListener('click', () => {
+    window.history.back();
+  });
+  window.addEventListener('popstate', () => {
+    showWelcome();
+  });
+  updateBackButtonVisibility();
 }
 
 // ===== QUICK ACTIONS =====
@@ -197,5 +223,6 @@ document.querySelectorAll('.action-btn').forEach(btn => {
 window.addEventListener('load', () => {
   loadNotes();
   showWelcome();
+  initBackButton();
   chatInput.focus();
 });
