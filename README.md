@@ -1,194 +1,134 @@
-# Notes Agent PWA 📱
+# Tonero - Complete Integration 🎯
 
-A Progressive Web App for taking notes with Claude AI assistance. Works on your phone like a native app!
+Your Tonero UI with Chat integration, ready to deploy as a PWA!
 
-## ✨ Features
+## Files Included
 
-- **📝 Notes Editor**: Create, edit, search, and delete notes
-- **💬 Chat with Claude**: AI assistant that can read/write your notes
-- **📱 PWA**: Install on your phone home screen
-- **🌙 Dark Theme**: Easy on the eyes
-- **💾 Offline Support**: Works without internet (except Claude chat)
+✅ **index.html** - Your Tonero UI + Chat tab + PWA meta tags
+✅ **app.js** - Tonero planner logic + Chat functionality  
+✅ **server.js** - Backend API for plans, notes, and chat
 
-## 🚀 Quick Deploy
+## How to Use These Files
 
-### Option 1: Railway (Recommended for Node.js apps)
+### In Cursor (notes-pwa project):
 
-1. **Sign up at [railway.app](https://railway.app)**
+1. **Replace `public/index.html`**
+   - Delete current file
+   - Copy/paste the new `index.html` content
 
-2. **Install Railway CLI**:
-   ```bash
-   npm install -g @railway/cli
-   ```
+2. **Replace `public/app.js`**
+   - Delete current file
+   - Copy/paste the new `app.js` content
 
-3. **Deploy**:
-   ```bash
-   cd notes-pwa
-   railway login
-   railway init
-   railway up
-   ```
+3. **Replace `server.js`** (root level, not in public/)
+   - Delete current file
+   - Copy/paste the new `server.js` content
 
-4. **Get your URL**: Railway will give you a URL like `https://your-app.up.railway.app`
+4. **Keep existing files:**
+   - ✅ `public/manifest.json` (already have)
+   - ✅ `public/sw.js` (already have)
+   - ✅ `public/icon-192.png` (already have)
+   - ✅ `public/icon-512.png` (already have)
+   - ✅ `package.json` (already have)
 
-### Option 2: Render
-
-1. **Sign up at [render.com](https://render.com)**
-
-2. **Create New Web Service**:
-   - Connect your GitHub repo (push this code first)
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-
-3. **Deploy**: Render will build and give you an HTTPS URL
-
-### Option 3: Fly.io
-
-1. **Install Fly CLI**: https://fly.io/docs/hands-on/install-flyctl/
-
-2. **Deploy**:
-   ```bash
-   cd notes-pwa
-   fly launch
-   fly deploy
-   ```
-
-## 📲 Installing on Your Phone
-
-### iPhone (Safari)
-
-1. Open your deployed URL in **Safari**
-2. Tap the **Share** button (square with arrow up)
-3. Scroll down and tap **"Add to Home Screen"**
-4. Tap **"Add"**
-5. The app icon appears on your home screen!
-
-### Android (Chrome)
-
-1. Open your deployed URL in **Chrome**
-2. Chrome will show **"Install app"** prompt, OR
-3. Tap menu (⋮) → **"Install app"** or **"Add to Home Screen"**
-4. The app icon appears on your home screen!
-
-## 🔑 Setup Your API Key
-
-1. Get your Claude API key from [console.anthropic.com](https://console.anthropic.com)
-2. Open the app
-3. Go to **Chat** tab
-4. Send a message
-5. It will prompt for your API key
-6. Key is stored locally on your device
-
-## 📂 Project Structure
-
-```
-notes-pwa/
-├── server.js           # Express backend
-├── package.json        # Dependencies
-├── notes/             # Your notes are stored here
-└── public/
-    ├── index.html     # Main app UI
-    ├── app.js         # Frontend logic
-    ├── manifest.json  # PWA config
-    ├── sw.js          # Service worker (offline support)
-    ├── icon-192.png   # App icon (small)
-    └── icon-512.png   # App icon (large)
-```
-
-## 🛠️ Local Development
+## Test Locally
 
 ```bash
-# Install dependencies
-npm install
-
-# Run locally
 npm start
-
-# Open in browser
-http://localhost:3000
-
-# Test on phone (same WiFi network)
-http://YOUR_COMPUTER_IP:3000
 ```
 
-## 🎨 Customization
+Open `http://localhost:3000`
+
+You should see:
+- **Planner tab**: Brain dump, plan generation, notes extraction
+- **Chat tab**: Talk to Claude
+
+## Deploy to Railway
+
+```bash
+git add .
+git commit -m "Integrate Tonero UI with Chat"
+git push
+```
+
+Railway auto-deploys. Wait 2 minutes.
+
+## Install on Phone
+
+1. Open your Railway URL on phone
+2. Safari → Share → Add to Home Screen
+3. Tap the Tonero icon!
+
+## Features
+
+### Planner Tab
+- Brain dump textarea
+- Generate AI-powered plans
+- Extract notes from conversations
+- View saved notes
+
+### Chat Tab
+- Talk to Claude about your tasks
+- Ask Claude to write notes
+- Get help organizing your work
+
+### PWA Features
+- Install on home screen
+- Works offline (except chat)
+- Brown "T" app icon
+- Full-screen experience
+
+## Notes on the Backend
+
+The `server.js` includes:
+- `/api/plan` - Generates plans (currently mock, integrate with your Claude API)
+- `/api/extract-notes` - Extracts notes (currently mock)
+- `/api/notes` - Lists saved notes
+- `/api/notes/:filename` - Read/write specific notes
+- `/api/chat` - Proxies to Claude API for chat
+
+**Important:** The `/api/plan` and `/api/extract-notes` endpoints have mock responses. You'll need to integrate them with your actual Tonero backend or Claude API to get real plan generation.
+
+## Customization
+
+### Change Colors
+Edit CSS variables in `index.html`:
+- `#1a1a1a` - Main dark color
+- `#f5f5f5` - Light backgrounds
+- `#3b82f6` - Blue accents
 
 ### Change App Name
 Edit `public/manifest.json`:
 ```json
 {
   "name": "Your App Name",
-  "short_name": "Short Name"
+  "short_name": "Short"
 }
 ```
 
-### Change Theme Colors
-Edit CSS variables in `public/index.html`:
-```css
-:root {
-  --bg: #0a0a0a;          /* Background */
-  --accent: #00ff88;      /* Accent color */
-}
-```
+### Change Icon
+Replace `public/icon-192.png` and `public/icon-512.png`
 
-### Change Icons
-Replace `icon-192.png` and `icon-512.png` with your own 192x192 and 512x512 PNG icons.
-
-## 🔒 Security Notes
-
-- API keys are stored locally on your device only
-- Notes are stored on your server
-- Use HTTPS in production (all deployment options provide this)
-- Consider adding authentication if hosting publicly
-
-## 📝 How It Works
-
-### Notes Tab
-- **Tap +** to create a new note
-- **Tap a note** to edit it
-- **Search** to filter notes
-- **Delete** button in the editor
-
-### Chat Tab
-- Chat with Claude about anything
-- Say **"write this to notes.md"** to save content
-- Claude can read your existing notes for context
-- Works best with natural language
-
-## 🐛 Troubleshooting
-
-**App won't install on iPhone?**
-- Must use Safari browser
-- URL must be HTTPS
-- Try clearing browser cache
-
-**App won't install on Android?**
-- Must use Chrome browser
-- URL must be HTTPS
-- Check if installation is allowed in settings
+## Troubleshooting
 
 **Chat not working?**
-- Check your Claude API key
-- Verify you have API credits
+- Make sure you enter your Claude API key when prompted
 - Check browser console for errors
 
-**Notes not syncing?**
-- Notes are stored on the server
-- Each device/browser has separate view
-- Backend must be running for sync
+**Notes not loading?**
+- Backend must be running
+- Check `notes/` directory exists
 
-## 🚀 Next Steps
+**PWA not installing?**
+- Must be HTTPS (Railway provides this)
+- Clear Safari cache and try again
+- Icons must be visible (not blank)
 
-Want to add more features? Here are ideas:
+## Next Steps
 
-- **Folders/Tags**: Organize notes better
-- **Voice Input**: Speak to create notes
-- **Export**: Download notes as ZIP
-- **Sync**: Multi-device sync with database
-- **Sharing**: Share notes with others
-- **Templates**: Quick note templates
-- **Rich Text**: Markdown preview
+1. Copy the 3 files to your `notes-pwa` project in Cursor
+2. Test locally with `npm start`
+3. Deploy with `git push`
+4. Install on your phone!
 
-Fork it, hack it, make it yours! 🎉
-# notes-pwa
-# notes-pwa
+🎉 You're ready to go!

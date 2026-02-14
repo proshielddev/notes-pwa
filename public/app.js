@@ -1,164 +1,61 @@
+const API = window.location.origin + "/api";
+
 // State
-let notes = [];
-let currentNote = null;
-let apiKey = localStorage.getItem('claudeApiKey') || '';
+let apiKey = localStorage.getItem('openaiApiKey') || '';
+let currentView = 'welcome'; // 'welcome' or 'chat'
 
-// Elements
-const tabs = document.querySelectorAll('.tab');
-const views = document.querySelectorAll('.view');
-const notesList = document.getElementById('notes-list');
-const searchInput = document.getElementById('search-input');
-const newNoteBtn = document.getElementById('new-note-btn');
-const noteModal = document.getElementById('note-modal');
-const noteTitle = document.getElementById('note-title');
-const noteContent = document.getElementById('note-content');
-const saveNoteBtn = document.getElementById('save-note-btn');
-const deleteNoteBtn = document.getElementById('delete-note-btn');
-const closeModalBtn = document.getElementById('close-modal');
-const chatMessages = document.getElementById('chat-messages');
-const chatInput = document.getElementById('chat-input');
-const sendBtn = document.getElementById('send-btn');
-const settingsDot = document.getElementById('settings-dot');
+// ===== DOM ELEMENTS (Define these FIRST) =====
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const messagesContainer = document.getElementById('messagesContainer');
+const welcomeView = document.getElementById('welcomeView');
+const chatView = document.getElementById('chatView');
 
-// Tab switching
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    const viewId = tab.dataset.view;
-    
-    tabs.forEach(t => t.classList.remove('active'));
-    views.forEach(v => v.classList.remove('active'));
-    
-    tab.classList.add('active');
-    document.getElementById(`${viewId}-view`).classList.add('active');
-    
-    if (viewId === 'notes') {
-      loadNotes();
-    }
-  });
-});
+// ===== VIEW SWITCHING =====
 
-// Load notes
-async function loadNotes() {
-  try {
-    const response = await fetch('/api/notes');
-    notes = await response.json();
-    renderNotes(notes);
-  } catch (error) {
-    console.error('Failed to load notes:', error);
-  }
+function showWelcome() {
+  welcomeView.style.display = 'block';
+  chatView.classList.remove('active');
+  currentView = 'welcome';
 }
 
-// Render notes list
-function renderNotes(notesToRender) {
-  if (notesToRender.length === 0) {
-    notesList.innerHTML = '<div class="empty-state">No notes yet. Tap + to create one.</div>';
-    return;
-  }
-  
-  notesList.innerHTML = notesToRender.map(note => `
-    <div class="note-item" data-filename="${note.filename}">
-      <div class="note-name">${note.name}</div>
-      <div class="note-preview">Tap to edit</div>
-    </div>
-  `).join('');
-  
-  // Add click handlers
-  document.querySelectorAll('.note-item').forEach(item => {
-    item.addEventListener('click', () => {
-      openNote(item.dataset.filename);
-    });
-  });
+function showChat() {
+  welcomeView.style.display = 'none';
+  chatView.classList.add('active');
+  currentView = 'chat';
 }
 
-// Search notes
-searchInput.addEventListener('input', (e) => {
-  const query = e.target.value.toLowerCase();
-  const filtered = notes.filter(note => 
-    note.name.toLowerCase().includes(query)
-  );
-  renderNotes(filtered);
-});
+// ===== QUICK ACTIONS =====
 
-// Open note for editing
-async function openNote(filename) {
-  try {
-    const response = await fetch(`/api/notes/${filename}`);
-    const data = await response.json();
-    
-    currentNote = filename;
-    noteTitle.value = filename;
-    noteContent.value = data.content;
-    noteModal.classList.add('active');
-    deleteNoteBtn.style.display = 'block';
-  } catch (error) {
-    console.error('Failed to open note:', error);
-  }
+function quickAction(action) {
+  showChat();
+  
+  const prompts = {
+    plan: "Help me create a plan for my tasks",
+    analyze: "I need help analyzing some data",
+    write: "Help me write something",
+    summarize: "I need to summarize some text"
+  };
+  
+  const message = prompts[action] || "How can you help me?";
+  chatInput.value = message;
+  chatInput.focus();
 }
 
-// Create new note
-newNoteBtn.addEventListener('click', () => {
-  currentNote = null;
-  noteTitle.value = '';
-  noteContent.value = '';
-  noteModal.classList.add('active');
-  deleteNoteBtn.style.display = 'none';
-  noteTitle.focus();
-});
+function showMore() {
+  addChatMessage("Here are more things I can help with:\n\n• Generate plans from your brain dumps\n• Extract notes from conversations\n• Organize your tasks\n• Answer questions\n• Write and edit content", 'assistant');
+  showChat();
+}
 
-// Save note
-saveNoteBtn.addEventListener('click', async () => {
-  const filename = noteTitle.value.trim() || 'untitled.md';
-  const content = noteContent.value;
-  
-  if (!filename.endsWith('.md') && !filename.endsWith('.txt')) {
-    noteTitle.value = filename + '.md';
-  }
-  
-  try {
-    await fetch(`/api/notes/${filename}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, mode: 'overwrite' }),
-    });
-    
-    noteModal.classList.remove('active');
-    loadNotes();
-  } catch (error) {
-    console.error('Failed to save note:', error);
-    alert('Failed to save note');
-  }
-});
+// ===== CHAT FUNCTIONALITY =====
 
-// Delete note
-deleteNoteBtn.addEventListener('click', async () => {
-  if (!currentNote) return;
-  
-  if (!confirm(`Delete ${currentNote}?`)) return;
-  
-  try {
-    await fetch(`/api/notes/${currentNote}`, {
-      method: 'DELETE',
-    });
-    
-    noteModal.classList.remove('active');
-    loadNotes();
-  } catch (error) {
-    console.error('Failed to delete note:', error);
-    alert('Failed to delete note');
-  }
-});
-
-// Close modal
-closeModalBtn.addEventListener('click', () => {
-  noteModal.classList.remove('active');
-});
-
-// Chat functionality
+// Auto-resize input
 chatInput.addEventListener('input', () => {
   chatInput.style.height = 'auto';
   chatInput.style.height = chatInput.scrollHeight + 'px';
 });
 
+// Send on Enter (Shift+Enter for new line)
 chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -166,84 +63,139 @@ chatInput.addEventListener('keydown', (e) => {
   }
 });
 
+// Send button
 sendBtn.addEventListener('click', sendMessage);
 
+// Send message to OpenAI
 async function sendMessage() {
   const message = chatInput.value.trim();
   if (!message) return;
   
   // Check for API key
   if (!apiKey) {
-    apiKey = prompt('Enter your Claude API key (stored locally):');
+    apiKey = prompt('Enter your OpenAI API key (stored locally):');
     if (!apiKey) return;
-    localStorage.setItem('claudeApiKey', apiKey);
-    settingsDot.style.display = 'none';
+    localStorage.setItem('openaiApiKey', apiKey);
+  }
+  
+  // Switch to chat view if in welcome
+  if (currentView === 'welcome') {
+    showChat();
   }
   
   // Add user message
-  addMessage(message, 'user');
+  addChatMessage(message, 'user');
   chatInput.value = '';
   chatInput.style.height = 'auto';
   
   sendBtn.disabled = true;
   
+  // Add loading indicator
+  const loadingMsg = addChatMessage('', 'assistant');
+  loadingMsg.innerHTML = '<div class="loading"></div>';
+  
   try {
-    // Check if message is about notes
-    const noteKeywords = ['note', 'write', 'save', 'record', 'remember', 'jot'];
-    const isNoteRelated = noteKeywords.some(kw => message.toLowerCase().includes(kw));
-    
-    // Build context with available notes
-    let contextMessage = message;
-    if (isNoteRelated) {
-      const notesList = notes.map(n => n.name).join(', ');
-      contextMessage = `Available notes: ${notesList || 'none'}.\n\nUser message: ${message}\n\nIf I ask you to write/save/record something, respond with: WRITE_NOTE|filename.md|content`;
-    }
-    
-    const response = await fetch('/api/chat', {
+    const response = await fetch(`${API}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: contextMessage, apiKey }),
+      body: JSON.stringify({ message, apiKey }),
     });
     
-    const data = await response.json();
-    const reply = data.content?.[0]?.text || 'No response';
+    if (!response.ok) {
+      throw new Error('Failed to get response from OpenAI');
+    }
     
-    // Check if Claude wants to write a note
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'No response';
+    
+    // Remove loading
+    loadingMsg.remove();
+    
+    // Check if wants to write a note
     if (reply.startsWith('WRITE_NOTE|')) {
-      const [_, filename, content] = reply.split('|');
-      await fetch(`/api/notes/${filename}`, {
+      const parts = reply.split('|');
+      const filename = parts[1];
+      const content = parts.slice(2).join('|');
+      
+      await fetch(`${API}/notes/${filename}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, mode: 'append' }),
       });
-      addMessage(`✓ Saved to ${filename}`, 'system');
+      addChatMessage(`✓ Saved to ${filename}`, 'system');
       loadNotes();
     } else {
-      addMessage(reply, 'assistant');
+      addChatMessage(reply, 'assistant');
     }
   } catch (error) {
     console.error('Chat error:', error);
-    addMessage('Failed to get response. Check your API key.', 'system');
+    loadingMsg.remove();
+    addChatMessage('Failed to get response. Check your API key.', 'system');
     apiKey = '';
-    localStorage.removeItem('claudeApiKey');
-    settingsDot.style.display = 'block';
+    localStorage.removeItem('openaiApiKey');
   }
   
   sendBtn.disabled = false;
+  chatInput.focus();
 }
 
-function addMessage(text, role) {
+// Add message to chat
+function addChatMessage(text, role) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${role}`;
   messageDiv.textContent = text;
-  chatMessages.appendChild(messageDiv);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  messagesContainer.appendChild(messageDiv);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  return messageDiv;
 }
 
-// Initial load
-loadNotes();
+// ===== HEADER BUTTONS =====
 
-// Show settings dot if no API key
-if (!apiKey) {
-  settingsDot.style.display = 'block';
+document.getElementById('newChatBtn').addEventListener('click', () => {
+  if (confirm('Start a new conversation? This will clear the current chat.')) {
+    messagesContainer.innerHTML = '<div class="message system">Chat with me about anything!</div>';
+    showWelcome();
+  }
+});
+
+document.getElementById('historyBtn').addEventListener('click', () => {
+  loadNotes();
+  addChatMessage('Here are your saved notes. You can ask me to read or create notes!', 'system');
+  showChat();
+});
+
+// ===== NOTES FUNCTIONALITY =====
+
+async function loadNotes() {
+  try {
+    const res = await fetch(`${API}/notes`);
+    if (!res.ok) throw new Error('Failed to load notes');
+    
+    const data = await res.json();
+    console.log('Notes loaded:', data.notes.length);
+  } catch (err) {
+    console.error('Failed to load notes:', err);
+  }
 }
+
+// ===== BUTTON EVENT LISTENERS =====
+
+// Quick action buttons
+document.querySelectorAll('.action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.action;
+    if (action === 'more') {
+      showMore();
+    } else {
+      quickAction(action);
+    }
+  });
+});
+
+// ===== INITIALIZATION =====
+
+window.addEventListener('load', () => {
+  loadNotes();
+  showWelcome();
+  chatInput.focus();
+});

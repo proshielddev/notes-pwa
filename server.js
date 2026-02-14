@@ -22,29 +22,115 @@ app.get('/sw.js', (req, res) => {
 
 // Notes directory
 const NOTES_DIR = path.join(__dirname, 'notes');
-
-// Ensure notes directory exists
 await fs.mkdir(NOTES_DIR, { recursive: true });
 
-// API Routes
+// Conversation history for context
+let conversationHistory = [];
+
+// ===== TONERO API ENDPOINTS =====
+
+// Generate Plan (using Claude API)
+app.post('/api/plan', async (req, res) => {
+  try {
+    const { dump, available_minutes, energy } = req.body;
+    
+    // Save to conversation history
+    conversationHistory.push({
+      role: 'user',
+      content: `Brain dump: ${dump}\nAvailable time: ${available_minutes} minutes\nEnergy level: ${energy}`
+    });
+    
+    // Mock response for now - you'll need to integrate with Claude API or your existing backend
+    const plan = {
+      top3: [
+        {
+          title: "Review project proposal",
+          why: "High impact deliverable due soon",
+          first_step: "Open the latest draft and read through",
+          estimate_minutes: 45
+        }
+      ],
+      quick_wins: [
+        {
+          title: "Reply to pending emails",
+          first_step: "Sort inbox by unread",
+          estimate_minutes: 15
+        }
+      ],
+      deep_work: [],
+      waiting_on: [],
+      risks: [],
+      one_question: "What's the most critical blocker to address first?"
+    };
+    
+    conversationHistory.push({
+      role: 'assistant',
+      content: JSON.stringify(plan)
+    });
+    
+    res.json({ plan });
+  } catch (error) {
+    console.error('Plan generation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Extract Notes (using Claude API)
+app.post('/api/extract-notes', async (req, res) => {
+  try {
+    const { instruction } = req.body;
+    
+    // Generate filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `notes-${timestamp}.md`;
+    
+    // Mock extraction - you'll integrate with Claude API
+    const content = `### ${instruction}\n\n- Key point from conversation\n- Another important item\n- Action item to follow up on\n\nCreated: ${new Date().toLocaleString()}`;
+    
+    const filepath = path.join(NOTES_DIR, filename);
+    await fs.writeFile(filepath, content, 'utf-8');
+    
+    res.json({ filename, content });
+  } catch (error) {
+    console.error('Extract notes error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== NOTES ENDPOINTS =====
 
 // List all notes
 app.get('/api/notes', async (req, res) => {
   try {
     const files = await fs.readdir(NOTES_DIR);
-    const notes = files
-      .filter(f => f.endsWith('.md') || f.endsWith('.txt'))
-      .map(f => ({
-        filename: f,
-        name: f.replace(/\.(md|txt)$/, ''),
-      }));
-    res.json(notes);
+    const notes = [];
+    
+    for (const file of files) {
+      if (file.endsWith('.md') || file.endsWith('.txt')) {
+        const filepath = path.join(NOTES_DIR, file);
+        const stats = await fs.stat(filepath);
+        const content = await fs.readFile(filepath, 'utf-8');
+        const preview = content.substring(0, 100);
+        
+        notes.push({
+          filename: file,
+          preview,
+          size: stats.size,
+          created: stats.birthtime
+        });
+      }
+    }
+    
+    // Sort by creation date, newest first
+    notes.sort((a, b) => b.created - a.created);
+    
+    res.json({ notes });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Read a note
+// Read a specific note
 app.get('/api/notes/:filename', async (req, res) => {
   try {
     const filepath = path.join(NOTES_DIR, req.params.filename);
@@ -79,64 +165,23 @@ app.post('/api/notes/:filename', async (req, res) => {
   }
 });
 
-// Delete a note
-app.delete('/api/notes/:filename', async (req, res) => {
-  try {
-    const filepath = path.join(NOTES_DIR, req.params.filename);
-    await fs.unlink(filepath);
-    res.json({ success: true, message: 'Note deleted' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// ===== CHAT ENDPOINT =====
 
-// Search notes
-app.get('/api/search', async (req, res) => {
-  try {
-    const query = req.query.q?.toLowerCase() || '';
-    const files = await fs.readdir(NOTES_DIR);
-    const results = [];
-    
-    for (const file of files) {
-      if (!file.endsWith('.md') && !file.endsWith('.txt')) continue;
-      
-      const filepath = path.join(NOTES_DIR, file);
-      const content = await fs.readFile(filepath, 'utf-8');
-      const lines = content.split('\n');
-      
-      lines.forEach((line, index) => {
-        if (line.toLowerCase().includes(query)) {
-          results.push({
-            file,
-            line: index + 1,
-            content: line.trim(),
-          });
-        }
-      });
-    }
-    
-    res.json(results);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Claude API proxy (to avoid CORS issues)
+// Chat with OpenAI
 app.post('/api/chat', async (req, res) => {
   try {
     const { message, apiKey } = req.body;
     
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        model: 'gpt-4',
         messages: [{ role: 'user', content: message }],
+        max_tokens: 1000,
       }),
     });
     
@@ -145,9 +190,4 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 Notes app running on port ${PORT}`);
-  console.log(`📝 Notes stored in: ${NOTES_DIR}`);
 });

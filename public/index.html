@@ -2,477 +2,619 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Notes Agent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tonero Agent</title>
   
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#0a0a14">
   
   <!-- iOS Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Notes">
+  <meta name="apple-mobile-web-app-title" content="Tonero">
   <link rel="apple-touch-icon" href="/icon-192.png">
   
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,600;1,400&display=swap');
-    
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     :root {
-      --bg: #0a0a0a;
-      --surface: #1a1a1a;
-      --surface-hover: #252525;
-      --border: #333;
-      --text: #e8e8e8;
-      --text-muted: #888;
-      --accent: #00ff88;
-      --accent-dim: #00cc6a;
-      --danger: #ff4444;
+      --bg-dark: #0a0a14;
+      --bg-card: #13131f;
+      --neon-cyan: #00f5ff;
+      --neon-purple: #bf5af2;
+      --neon-pink: #ff2e97;
+      --neon-blue: #4d7cff;
+      --text-primary: #e8e8f0;
+      --text-muted: #8b8b9a;
+      --glow-cyan: rgba(0, 245, 255, 0.5);
+      --glow-purple: rgba(191, 90, 242, 0.5);
     }
-    
+
     body {
-      font-family: 'Newsreader', serif;
-      background: var(--bg);
-      color: var(--text);
-      overflow: hidden;
-      -webkit-font-smoothing: antialiased;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    #app {
-      height: 100vh;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-    
-    /* Tab Navigation */
-    .tabs {
-      display: flex;
-      gap: 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    
-    .tab {
-      flex: 1;
-      padding: 16px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.2s;
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
       position: relative;
     }
-    
-    .tab.active {
-      color: var(--accent);
-    }
-    
-    .tab.active::after {
+
+    /* Animated background grid */
+    body::before {
       content: '';
-      position: absolute;
-      bottom: 0;
+      position: fixed;
+      top: 0;
       left: 0;
       right: 0;
-      height: 2px;
-      background: var(--accent);
+      bottom: 0;
+      background-image: 
+        linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
     }
-    
-    .tab:active {
-      transform: scale(0.98);
-    }
-    
-    /* Content Area */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    .view {
-      display: none;
-      height: 100%;
-    }
-    
-    .view.active {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    /* Notes View */
-    .notes-header {
-      padding: 20px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-    
-    .search-box {
-      width: 100%;
-      padding: 12px 16px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 14px;
-    }
-    
-    .search-box:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    
-    .notes-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-    }
-    
-    .note-item {
-      padding: 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .note-item:active {
-      transform: scale(0.98);
-      background: var(--surface-hover);
-    }
-    
-    .note-name {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-    
-    .note-preview {
-      font-size: 13px;
-      color: var(--text-muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    
-    .empty-state {
-      padding: 60px 20px;
-      text-align: center;
-      color: var(--text-muted);
-      font-style: italic;
-    }
-    
-    .fab {
+
+    /* Floating orbs */
+    .orb {
       position: fixed;
-      right: 20px;
-      bottom: 80px;
-      width: 56px;
-      height: 56px;
       border-radius: 50%;
-      background: var(--accent);
-      color: var(--bg);
-      border: none;
-      font-size: 28px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
-      transition: all 0.2s;
+      filter: blur(80px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 1;
+      animation: float 20s infinite ease-in-out;
     }
-    
-    .fab:active {
-      transform: scale(0.9);
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--neon-cyan);
+      top: -200px;
+      left: -200px;
+      animation-delay: 0s;
     }
-    
-    /* Chat View */
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: var(--neon-purple);
+      bottom: -150px;
+      right: -150px;
+      animation-delay: -7s;
+    }
+
+    .orb-3 {
+      width: 350px;
+      height: 350px;
+      background: var(--neon-pink);
+      top: 50%;
+      right: -175px;
+      animation-delay: -14s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -50px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      padding: 20px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0;
+      margin-bottom: 40px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
       gap: 16px;
     }
-    
-    .message {
-      max-width: 85%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 15px;
-      line-height: 1.5;
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 24px;
+      color: white;
+      box-shadow: 0 0 30px var(--glow-cyan);
+      position: relative;
     }
-    
-    .message.user {
-      align-self: flex-end;
-      background: var(--accent);
-      color: var(--bg);
-      border-bottom-right-radius: 4px;
+
+    .logo-icon::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      z-index: -1;
+      filter: blur(8px);
+      opacity: 0.6;
     }
-    
-    .message.assistant {
-      align-self: flex-start;
-      background: var(--surface);
-      border-bottom-left-radius: 4px;
+
+    .logo-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 1px;
     }
-    
-    .message.system {
-      align-self: center;
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-family: 'IBM Plex Mono', monospace;
-      border: 1px solid var(--border);
-    }
-    
-    .chat-input-area {
-      padding: 16px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
+
+    .header-actions {
       display: flex;
       gap: 12px;
-      align-items: flex-end;
     }
-    
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 18px;
+    }
+
+    .icon-btn:hover {
+      background: rgba(0, 245, 255, 0.1);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 20px var(--glow-cyan);
+      transform: translateY(-2px);
+    }
+
+    /* Main Card */
+    .main-card {
+      background: var(--bg-card);
+      border-radius: 24px;
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      padding: 48px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 
+        0 0 60px rgba(0, 245, 255, 0.1),
+        inset 0 0 60px rgba(0, 245, 255, 0.02);
+    }
+
+    .main-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      opacity: 0.5;
+    }
+
+    /* Agent Avatar */
+    .agent-avatar {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 0 40px var(--glow-purple);
+      animation: pulse 3s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 40px var(--glow-purple); }
+      50% { transform: scale(1.05); box-shadow: 0 0 60px var(--glow-purple); }
+    }
+
+    .agent-avatar::before {
+      content: '✨';
+      font-size: 36px;
+      animation: spin 10s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .agent-avatar::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+      z-index: -1;
+      filter: blur(12px);
+      opacity: 0.6;
+    }
+
+    /* Greeting */
+    .greeting {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 300;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .main-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 48px;
+      background: linear-gradient(135deg, var(--text-primary), var(--neon-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .action-btn {
+      padding: 16px 20px;
+      border-radius: 16px;
+      background: rgba(0, 245, 255, 0.05);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 245, 255, 0.1);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 20px var(--glow-cyan);
+      transform: translateY(-2px);
+    }
+
+    .action-btn::before {
+      content: '→';
+      font-size: 16px;
+      color: var(--neon-cyan);
+    }
+
+    .more-btn {
+      grid-column: 1 / -1;
+      justify-content: center;
+      background: rgba(191, 90, 242, 0.05);
+      border-color: rgba(191, 90, 242, 0.2);
+    }
+
+    .more-btn::before {
+      content: '+';
+      color: var(--neon-purple);
+    }
+
+    .more-btn:hover {
+      background: rgba(191, 90, 242, 0.1);
+      border-color: var(--neon-purple);
+      box-shadow: 0 0 20px var(--glow-purple);
+    }
+
+    /* Chat Input */
+    .chat-input-container {
+      margin-top: auto;
+      padding-top: 24px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      background: var(--bg-dark);
+      border-radius: 20px;
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 30px var(--glow-cyan);
+    }
+
+    .input-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 50%;
+      transition: all 0.3s;
+      font-size: 18px;
+    }
+
+    .input-icon:hover {
+      background: rgba(0, 245, 255, 0.1);
+      color: var(--neon-cyan);
+    }
+
     .chat-input {
       flex: 1;
-      padding: 12px 16px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      color: var(--text);
-      font-family: 'Newsreader', serif;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
       font-size: 15px;
-      resize: none;
-      max-height: 120px;
-    }
-    
-    .chat-input:focus {
+      padding: 12px 8px;
       outline: none;
-      border-color: var(--accent);
     }
-    
+
+    .chat-input::placeholder {
+      color: var(--text-muted);
+    }
+
     .send-btn {
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: var(--accent);
-      color: var(--bg);
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
       border: none;
+      color: white;
       font-size: 20px;
       cursor: pointer;
-      transition: all 0.2s;
-      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px var(--glow-cyan);
     }
-    
+
+    .send-btn:hover {
+      transform: scale(1.1) rotate(45deg);
+      box-shadow: 0 0 40px var(--glow-cyan);
+    }
+
     .send-btn:active {
-      transform: scale(0.9);
+      transform: scale(0.95) rotate(45deg);
     }
-    
-    .send-btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-    
-    /* Modal */
-    .modal {
+
+    /* Chat Messages View */
+    .chat-view {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.9);
-      z-index: 1000;
-      padding: 20px;
-      animation: fadeIn 0.2s;
+      flex-direction: column;
+      height: 100%;
     }
-    
-    .modal.active {
+
+    .chat-view.active {
+      display: flex;
+    }
+
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 0;
       display: flex;
       flex-direction: column;
+      gap: 16px;
     }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    
-    .modal-title {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 16px;
-      color: var(--accent);
-    }
-    
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--text);
-      font-size: 24px;
-      cursor: pointer;
-      padding: 8px;
-    }
-    
-    .modal-input {
-      width: 100%;
-      padding: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
+
+    .message {
+      max-width: 80%;
+      padding: 16px 20px;
+      border-radius: 20px;
       font-size: 14px;
-      margin-bottom: 12px;
-    }
-    
-    .modal-input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    
-    .modal-textarea {
-      flex: 1;
-      padding: 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: 'Newsreader', serif;
-      font-size: 15px;
       line-height: 1.6;
-      resize: none;
+      position: relative;
+      animation: slideIn 0.3s ease-out;
     }
-    
-    .modal-textarea:focus {
-      outline: none;
-      border-color: var(--accent);
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    
-    .modal-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 16px;
-    }
-    
-    .btn {
-      flex: 1;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .btn-primary {
-      background: var(--accent);
-      color: var(--bg);
-    }
-    
-    .btn-danger {
-      background: var(--danger);
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
       color: white;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 0 20px var(--glow-cyan);
     }
-    
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
+
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--bg-dark);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
     }
-    
-    .btn:active {
-      transform: scale(0.98);
+
+    .message.system {
+      align-self: center;
+      background: rgba(191, 90, 242, 0.1);
+      border: 1px solid rgba(191, 90, 242, 0.3);
+      color: var(--text-muted);
+      font-size: 12px;
+      max-width: 90%;
+      text-align: center;
     }
-    
-    /* Settings indicator */
-    .settings-dot {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      width: 8px;
-      height: 8px;
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 245, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 245, 255, 0.4);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px;
+      }
+
+      .main-title {
+        font-size: 28px;
+      }
+
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .action-btn {
+        padding: 14px 16px;
+        font-size: 12px;
+      }
+
+      .message {
+        max-width: 85%;
+      }
+    }
+
+    /* Loading animation */
+    .loading {
+      display: inline-block;
+      width: 60px;
+      height: 12px;
+      position: relative;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      background: var(--danger);
-      animation: pulse 2s infinite;
-      z-index: 100;
+      background: var(--neon-cyan);
+      animation: loading 1.2s infinite ease-in-out;
+      box-shadow: 0 0 10px var(--glow-cyan);
     }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+
+    @keyframes loading {
+      0%, 100% { left: 0; }
+      50% { left: 48px; }
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <!-- Tab Navigation -->
-    <div class="tabs">
-      <button class="tab active" data-view="notes">Notes</button>
-      <button class="tab" data-view="chat">Chat</button>
+  <!-- Floating orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-area">
+        <div class="logo-icon">T</div>
+        <div class="logo-text">TONERO</div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="newChatBtn" title="New Chat">+</button>
+        <button class="icon-btn" id="historyBtn" title="History">⟲</button>
+      </div>
     </div>
+
+    <!-- Main Card -->
+    <div class="main-card">
+      <!-- Welcome View -->
+      <div class="welcome-view" id="welcomeView">
+        <div class="agent-avatar"></div>
+        <div class="greeting">Hello, User!</div>
+        <h1 class="main-title">How can I help?</h1>
+        
+        <div class="quick-actions">
+          <div class="quick-actions">
+            <button class="action-btn" data-action="plan">Make a plan</button>
+            <button class="action-btn" data-action="analyze">Analyze data</button>
+            <button class="action-btn" data-action="write">Help me write</button>
+            <button class="action-btn" data-action="summarize">Summarize text</button>
+            <button class="action-btn more-btn" data-action="more">More</button>
+          </div>
+        </div>
     
-    <!-- Notes View -->
-    <div class="view active" id="notes-view">
-      <div class="notes-header">
-        <input type="text" class="search-box" placeholder="Search notes..." id="search-input">
+  
+
+      <!-- Chat View -->
+      <div class="chat-view" id="chatView">
+        <div class="messages-container" id="messagesContainer">
+          <div class="message system">Chat with me about anything!</div>
+        </div>
       </div>
-      <div class="notes-list" id="notes-list">
-        <div class="empty-state">No notes yet. Tap + to create one.</div>
-      </div>
-      <button class="fab" id="new-note-btn">+</button>
-    </div>
-    
-    <!-- Chat View -->
-    <div class="view" id="chat-view">
-      <div class="chat-messages" id="chat-messages">
-        <div class="message system">Ask me anything about your notes, or tell me to write something down.</div>
-      </div>
-      <div class="chat-input-area">
-        <textarea class="chat-input" id="chat-input" placeholder="Message..." rows="1"></textarea>
-        <button class="send-btn" id="send-btn">↑</button>
+
+      <!-- Chat Input -->
+      <div class="chat-input-container">
+        <div class="input-wrapper">
+          <div class="input-icon" title="Attach">+</div>
+          <input type="text" class="chat-input" id="chatInput" placeholder="Ask anything...">
+          <div class="input-icon" title="Voice">🎤</div>
+          <button class="send-btn" id="sendBtn">↑</button>
+        </div>
       </div>
     </div>
   </div>
-  
-  <!-- Note Editor Modal -->
-  <div class="modal" id="note-modal">
-    <div class="modal-header">
-      <input type="text" class="modal-input" id="note-title" placeholder="note-name.md">
-      <button class="close-btn" id="close-modal">×</button>
-    </div>
-    <textarea class="modal-textarea" id="note-content" placeholder="Start writing..."></textarea>
-    <div class="modal-actions">
-      <button class="btn btn-danger" id="delete-note-btn">Delete</button>
-      <button class="btn btn-primary" id="save-note-btn">Save</button>
-    </div>
-  </div>
-  
-  <!-- Settings indicator (shows if no API key) -->
-  <div class="settings-dot" id="settings-dot" style="display: none;"></div>
-  
-  <script src="/app.js"></script>
+
+  <script src="app.js"></script>
   
   <!-- Service Worker Registration -->
   <script>
