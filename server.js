@@ -17,7 +17,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve service worker from root
 app.get('/sw.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'sw.js'));
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+
 });
 
 // Notes directory
@@ -190,4 +191,8 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Tonero running on port ${PORT}`);
+  console.log(`📝 Notes stored in: ${NOTES_DIR}`);
 });
