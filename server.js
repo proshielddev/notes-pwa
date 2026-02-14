@@ -194,5 +194,7 @@ app.post('/api/chat', async (req, res) => {
 });
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Tonero running on port ${PORT}`);
+  console.log(`🔗 http://localhost:${PORT}`);
   console.log(`📝 Notes stored in: ${NOTES_DIR}`);
 });
+

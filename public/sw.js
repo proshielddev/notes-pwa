@@ -12,6 +12,16 @@ self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
   );
+  self.addEventListener("activate", (e) => {
+    e.waitUntil(
+      (async () => {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null)));
+        await self.clients.claim();
+      })()
+    );
+  });
+  
   self.skipWaiting();
 });
 
