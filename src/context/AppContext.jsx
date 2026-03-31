@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  // Dummy Data for Leads & Pipeline
+
+  // ── LEADS ──────────────────────────────────────────────────────────────────
   const [leads, setLeads] = useState([
     {
       id: 'L-1001',
@@ -29,7 +30,7 @@ export function AppProvider({ children }) {
       depositRequired: 'Yes',
       source: 'Website',
       status: 'Awaiting Deposit',
-      estimateTotal: 1250.00
+      estimateTotal: 1250.00,
     },
     {
       id: 'L-1002',
@@ -55,7 +56,7 @@ export function AppProvider({ children }) {
       depositRequired: 'Yes',
       source: 'Referral',
       status: 'Estimating',
-      estimateTotal: 450.00
+      estimateTotal: 450.00,
     },
     {
       id: 'L-1003',
@@ -82,44 +83,130 @@ export function AppProvider({ children }) {
       source: 'Phone',
       status: 'Booked',
       estimateTotal: 2100.00,
-      depositPaid: 500.00
-    }
+      depositPaid: 500.00,
+    },
   ]);
 
+  // ── STANDALONE ESTIMATES ───────────────────────────────────────────────────
+  const [estimates, setEstimates] = useState([
+    {
+      id: 'E-3001',
+      customerName: 'James Carter',
+      phone: '(419) 555-0477',
+      pickupAddress: '320 Ridge Rd, Perrysburg, OH',
+      dropoffAddress: '1100 Monroe St, Toledo, OH',
+      moveDate: '2026-04-22',
+      moveSize: '2 Bedroom',
+      buildingType: 'House',
+      pickupFloor: '1',
+      dropoffFloor: '2',
+      elevator: 'No',
+      numMovers: 2,
+      hourlyRate: 125,
+      estimatedHours: 5,
+      distanceMiles: 18.4,
+      distanceFeeRate: 2.50,
+      distanceFee: 46,
+      heavyItemFee: 0,
+      packingFee: 0,
+      longCarryFee: 0,
+      disassemblyFee: 0,
+      discount: 0,
+      estimateType: 'Non-binding',
+      estimateConfidence: 'High',
+      estimateTotal: 1296,
+      createdAt: '2026-03-30',
+      status: 'Draft',
+    },
+    {
+      id: 'E-3002',
+      customerName: 'Priya Nair',
+      phone: '(567) 555-0122',
+      pickupAddress: '88 University Dr, Bowling Green, OH',
+      dropoffAddress: '540 Collingwood Blvd, Toledo, OH',
+      moveDate: '2026-05-01',
+      moveSize: '1 Bedroom',
+      buildingType: 'Apartment',
+      pickupFloor: '3',
+      dropoffFloor: '1',
+      elevator: 'Yes',
+      numMovers: 2,
+      hourlyRate: 125,
+      estimatedHours: 3,
+      distanceMiles: 26.1,
+      distanceFeeRate: 2.50,
+      distanceFee: 65.25,
+      heavyItemFee: 0,
+      packingFee: 0,
+      longCarryFee: 0,
+      disassemblyFee: 0,
+      discount: 0,
+      estimateType: 'Binding',
+      estimateConfidence: 'Medium',
+      estimateTotal: 815.25,
+      createdAt: '2026-03-31',
+      status: 'Quote Sent',
+    },
+  ]);
+
+  // ── JOBS ───────────────────────────────────────────────────────────────────
   const [jobs, setJobs] = useState([
     {
       id: 'J-2001',
       leadId: 'L-1003',
       date: '2026-04-05',
       customerName: 'Elena Gilbert',
+      pickupAddress: '1092 Suburbia Dr, Sylvania, OH',
+      dropoffAddress: '782 Downtown Blvd, Toledo, OH',
+      moveSize: '3 Bedroom',
       status: 'Scheduled',
       crew: ['Dave', 'Marcus', 'Luis'],
       backupNote: 'Call Mike if crew is delayed',
       estimateTotal: 2100.00,
       depositPaid: 500.00,
-      balance: 1600.00
-    }
+      balance: 1600.00,
+    },
   ]);
 
-  // Methods
+  // ── LEAD METHODS ───────────────────────────────────────────────────────────
   const addLead = (newLead) => {
-    setLeads([{ ...newLead, id: `L-${Math.floor(Math.random() * 9000) + 1000}` }, ...leads]);
+    setLeads(prev => [{ ...newLead, id: `L-${Math.floor(Math.random() * 9000) + 1000}` }, ...prev]);
   };
 
   const updateLeadStatus = (id, newStatus) => {
-    setLeads(leads.map(lead => lead.id === id ? { ...lead, status: newStatus } : lead));
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l));
   };
-  
+
+  const updateLead = (id, updates) => {
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  };
+
+  // ── ESTIMATE METHODS ───────────────────────────────────────────────────────
+  const addEstimate = (estimate) => {
+    const id = `E-${Math.floor(Math.random() * 9000) + 1000}`;
+    setEstimates(prev => [{ ...estimate, id, createdAt: new Date().toISOString().split('T')[0] }, ...prev]);
+    return id;
+  };
+
+  const updateEstimate = (id, updates) => {
+    setEstimates(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+  };
+
+  // ── JOB METHODS ───────────────────────────────────────────────────────────
   const addJob = (newJob) => {
-    setJobs([...jobs, newJob]);
+    setJobs(prev => [...prev, newJob]);
   };
 
   const updateJob = (id, updates) => {
-    setJobs(jobs.map(job => job.id === id ? { ...job, ...updates } : job));
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, ...updates } : j));
   };
 
   return (
-    <AppContext.Provider value={{ leads, jobs, addLead, updateLeadStatus, addJob, updateJob }}>
+    <AppContext.Provider value={{
+      leads, addLead, updateLeadStatus, updateLead,
+      estimates, addEstimate, updateEstimate,
+      jobs, addJob, updateJob,
+    }}>
       {children}
     </AppContext.Provider>
   );
